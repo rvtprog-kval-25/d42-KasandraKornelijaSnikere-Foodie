@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 import os
-
+from django.contrib.messages import constants as messages
 from django import middleware
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -43,7 +43,10 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'counter.apps.FoodieConfig',
     'mathfilters',
-    'csp'
+    'csp',
+    'accounts',
+    'widget_tweaks',
+
 
 ]
 
@@ -143,3 +146,17 @@ STATICFILES_DIRS = [
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'
+
+
+
+MESSAGE_TAGS = {
+    messages.DEBUG: 'alert-secondary',
+    messages.INFO: 'alert-info',
+    messages.SUCCESS: 'alert-success',
+    messages.WARNING: 'alert-warning',
+    messages.ERROR: 'alert-danger',
+}

@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2 class="mb-4">🎯 Set Up Your Calorie & Goal Profile</h2>
+    {% if form.errors %}
+      <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        {% for field, errors in form.errors.items %}
+          {% for error in errors %}
+            <div>{{ error }}</div>
+          {% endfor %}
+        {% endfor %}
+      </div>
+    {% endif %}
+
+
+  <form method="POST">
+    {% csrf_token %}
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label for="id_sex" class="form-label">Sex</label>
+        {{ form.sex|add_class:"form-select" }}
+      </div>
+
+      <div class="col-md-4">
+        <label for="id_age" class="form-label">Age</label>
+        {{ form.age|add_class:"form-control" }}
+      </div>
+
+      <div class="col-md-4">
+        <label for="id_height" class="form-label">Height (cm)</label>
+        {{ form.height|add_class:"form-control" }}
+      </div>
+
+      <div class="col-md-4">
+        <label for="id_weight" class="form-label">Current Weight (kg)</label>
+        {{ form.weight|add_class:"form-control" }}
+      </div>
+
+      <div class="col-md-4">
+        <label for="id_goal" class="form-label">Goal</label>
+        {{ form.goal|add_class:"form-select" }}
+      </div>
+
+      <div class="col-md-4" id="target-weight-field" style="display: none;">
+        <label for="id_target_weight" class="form-label">Target Weight (kg)</label>
+        {{ form.target_weight|add_class:"form-control" }}
+      </div>
+
+      <div class="col-md-6">
+        <label for="id_activity" class="form-label">Activity Level</label>
+        {{ form.activity|add_class:"form-select" }}
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-success mt-4">✅ Save</button>
+  </form>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const goalField = document.getElementById("id_goal");
+    const targetField = document.getElementById("target-weight-field");
+
+    function toggleTargetField() {
+      const goalValue = parseInt(goalField.value);
+      targetField.style.display = (goalValue === 1 || goalValue === 2) ? "block" : "none";
+    }
+
+    goalField.addEventListener("change", toggleTargetField);
+    toggleTargetField();  // initial load
+  });
+</script>
+{% endblock %}

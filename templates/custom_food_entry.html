@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2>➕ Add Custom Food</h2>
+  <p>Enter nutritional values per 100g and the portion size you ate.</p>
+
+  <form method="POST">
+    {% csrf_token %}
+    <div class="row g-3">
+      {% for field in form %}
+        <div class="col-md-6">
+          <label class="form-label">{{ field.label }}</label>
+          {{ field|add_class:"form-control" }}
+          <div class="form-text">{{ field.help_text }}</div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <button type="submit" class="btn btn-success mt-4">✅ Add to Diary</button>
+  </form>
+</div>
+{% endblock %}

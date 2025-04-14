@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: DejaVu Sans; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #aaa; padding: 6px; text-align: left; }
+        th { background-color: #eee; }
+    </style>
+</head>
+<body>
+    <h2>Food Diary Report</h2>
+    <p>User: {{ user.username }}</p>
+    <p>Period: {{ start }} — {{ end }}</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Food</th>
+                <th>Calories</th>
+                <th>Protein (g)</th>
+                <th>Fat (g)</th>
+                <th>Carbs (g)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in entries %}
+            <tr>
+                <td>{{ entry.date }}</td>
+                <td>{{ entry.name }}</td>
+                <td>{{ entry.calories|floatformat:1 }}</td>
+                <td>{{ entry.protein|floatformat:1 }}</td>
+                <td>{{ entry.fat|floatformat:1 }}</td>
+                <td>{{ entry.carbohydrates|floatformat:1 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h4>Summary</h4>
+    <p>Total Calories: {{ total_calories|floatformat:1 }}</p>
+    <p>Total Protein: {{ total_protein|floatformat:1 }} g</p>
+    <p>Total Fat: {{ total_fat|floatformat:1 }} g</p>
+    <p>Total Carbs: {{ total_carbs|floatformat:1 }} g</p>
+</body>
+</html>
