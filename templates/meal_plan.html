@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-3">
+    <h2 class="mb-4 fw-light text-center" style="color: #2d4739;">
+      🍳 <strong>Your Personalized Meal Plan</strong>
+    </h2>
+
+<div class="caloriescont mb-4">
+  <form method="POST">
+    {% csrf_token %}
+    <div class="row g-3 align-items-center gx-3 gy-2">
+      <div class="col-md-3">
+        <label class="form-label">Diet Preference</label>
+        {{ form.diet_preference|add_class:"form-select form-select-sm" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Include Foods</label>
+        {{ form.include_foods|add_class:"form-control form-control-sm" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Exclude Foods</label>
+        {{ form.exclude_foods|add_class:"form-control form-control-sm" }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label invisible">Generate</label>
+        <button type="submit" class="btn whoop w-100"> Generate</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+{% if sections %}
+  <!-- Existing layout for parsed sections -->
+<div class="caloriescont mt-4">
+  <h5 class="mb-4 fw-semibold text-success">📋 Meal Plan Result</h5>
+  <div class="row">
+    {% for title, content in sections.items %}
+      <div class="col-md-6 mb-4">
+        <div class="bg-light border rounded p-3 h-100">
+          <h6 class="text-center fw-semibold mb-3">
+            {% if "breakfast" in title|lower %}🥞 Breakfast
+            {% elif "lunch" in title|lower %}🥗 Lunch
+            {% elif "dinner" in title|lower %}🍝 Dinner
+            {% elif "snack" in title|lower %}🍏 Snacks
+            {% else %}📝 {{ title }}
+            {% endif %}
+          </h6>
+          <div style="white-space: pre-line;" class="small">{{ content }}</div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  {% if summary %}
+    <div class="bg-light border rounded p-3 mt-3">
+      <strong>📌 Summary:</strong>
+      <p class="mb-0" style="white-space: pre-line;">{{ summary }}</p>
+    </div>
+  {% endif %}
+</div>
+
+
+{% elif meal_plan %}
+  <!-- Fallback if sections parsing fails -->
+<div class="caloriescont mt-4">
+  <h5 class="fw-semibold text-primary mb-3">📋 Meal Plan Result</h5>
+  <div class="bg-light border rounded p-3">
+    <pre style="white-space: pre-wrap;">{{ meal_plan }}</pre>
+  </div>
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+
+

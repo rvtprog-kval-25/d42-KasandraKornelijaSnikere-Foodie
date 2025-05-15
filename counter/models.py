@@ -21,6 +21,7 @@ class UserParametres(models.Model):
     activity = models.IntegerField()
     date_time = models.DateField()
     age = models.IntegerField()
+    calories_goal = models.IntegerField(null=True, blank=True)
 
 
 class Food(models.Model):
@@ -33,6 +34,7 @@ class Food(models.Model):
     protein = models.FloatField(default=0)
     fat = models.FloatField(default=0)
     fiber = models.FloatField(default=0)
+    portion = models.FloatField(null=True, blank=True)  # Portion in grams
 
     def __str__(self):
         return f"{self.name} ({self.calories} cal)"

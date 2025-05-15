@@ -4,6 +4,28 @@ from django import forms
 from counter.models import UserParametres
 from django import forms
 from .models import Food
+from django import forms
+
+class MealPlanRequestForm(forms.Form):
+    diet_preference = forms.ChoiceField(
+        choices=[
+            ('none', 'No preference'),
+            ('vegetarian', 'Vegetarian'),
+            ('vegan', 'Vegan'),
+            ('keto', 'Keto'),
+            ('low_carb', 'Low Carb'),
+            ('high_protein', 'High Protein'),
+        ],
+        required=False
+    )
+    include_foods = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'placeholder': 'E.g., chicken, broccoli', 'rows': 1})
+    )
+    exclude_foods = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'placeholder': 'E.g., dairy, gluten', 'rows': 1})
+    )
 class WeightEntryForm(forms.ModelForm):
     class Meta:
         model = WeightEntry

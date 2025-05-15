@@ -8,7 +8,6 @@ from datetime import date, timedelta, datetime
 from django.shortcuts import redirect
 from django.http import HttpResponse
 from django.template.loader import get_template
-from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 
 from reportlab.pdfgen import canvas
@@ -21,9 +20,102 @@ from .forms import (
     CustomFoodForm
 )
 from .models import WeightEntry
-from counter.models import UserParametres
 from counter.utils import calculate_targets
 
+
+from django.conf import settings
+import openai
+from django.utils.safestring import mark_safe
+
+openai.api_key = settings.OPENAI_API_KEY
+
+import openai
+from django.contrib.auth.decorators import login_required
+from .forms import MealPlanRequestForm
+from .models import UserParametres
+
+# 🔮 AI prompt generation
+def generate_meal_plan(prompt):
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful dietitian who creates meal plans based on nutritional targets."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=700,
+        temperature=0.7
+    )
+    return response['choices'][0]['message']['content']
+
+
+# 👨‍🍳 Meal plan view
+from django.utils.safestring import mark_safe
+import re
+
+@login_required
+def meal_plan_view(request):
+    user_params = UserParametres.objects.filter(user=request.user).first()
+    calorie_goal = int(user_params.calories_goal) if user_params and user_params.calories_goal else 2000
+
+    meal_plan = None
+    sections = {}
+    summary = None
+
+    if request.method == "POST":
+        form = MealPlanRequestForm(request.POST)
+        if form.is_valid():
+            diet = form.cleaned_data['diet_preference']
+            include = form.cleaned_data['include_foods']
+            exclude = form.cleaned_data['exclude_foods']
+
+            prompt = (
+                f"Create a daily meal plan (breakfast, lunch, dinner) for a person with a {calorie_goal} kcal target.\n"
+            )
+            if diet and diet != "none":
+                prompt += f"The meal plan should follow a {diet} diet.\n"
+            if include:
+                prompt += f"Make sure to include these foods: {include}.\n"
+            if exclude:
+                prompt += f"Please avoid these foods: {exclude}.\n"
+            prompt += "Include approximate calories per meal and try to balance macronutrients."
+
+            try:
+                meal_plan = generate_meal_plan(prompt)
+                normalized_plan = "\n" + meal_plan.strip()
+                # Ensure proper dict structure
+                pattern = r"\n(?=(Breakfast|Lunch|Dinner|Snacks(?: \(.*?\))?):)"
+                split_plan = re.split(pattern, normalized_plan)
+
+                # parts = ['', 'Breakfast', '...content...', 'Lunch', '...content...', ...]
+                for i in range(1, len(split_plan), 2):
+                    section_title = split_plan[i].strip()
+                    content = split_plan[i + 1].strip()
+
+                    # ✅ Try to extract summary text if it's in the last section
+                    section_text = content  # default
+                    if i + 2 >= len(split_plan):
+                        # Try to extract summary *only if it's clearly separate*
+                        parts = content.strip().split("\n\n", 1)
+                        if len(parts) == 2 and len(
+                                parts[1].split()) > 20:  # crude check to avoid splitting short blurbs
+                            section_text = parts[0].strip()
+                            summary = parts[1].strip()
+
+                    sections[section_title] = mark_safe(section_text)
+
+
+            except Exception as e:
+                meal_plan = f"⚠️ Error contacting AI: {str(e)}"
+    else:
+        form = MealPlanRequestForm()
+    print("Sections:", sections)
+
+    return render(request, 'meal_plan.html', {
+        'form': form,
+        'meal_plan': meal_plan,
+        'sections': sections,
+        'summary': summary
+    })
 
 @login_required
 def download_weight_pdf(request):
@@ -46,33 +138,55 @@ def download_weight_pdf(request):
         messages.warning(request, "No weight entries found for this range.")
         return redirect('profile')
 
+    # Summary
+    start_weight = entries.first().weight
+    end_weight = entries.last().weight
+    difference = end_weight - start_weight
+    summary = f"Net change: {'+' if difference >= 0 else ''}{difference:.1f} kg"
 
-
-    # 🧾 Generate PDF
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
 
+    # 🧾 Title and metadata
     p.setFont("Helvetica-Bold", 16)
-    p.drawString(50, 750, "📉 Weight Progress Report")
+    p.drawString(50, 770, "📉 Weight Progress Report")
+
     p.setFont("Helvetica", 12)
-    p.drawString(50, 730, f"From {start_date} to {end_date}")
+    p.drawString(50, 745, f"From {start_date} to {end_date}")
+    p.drawString(50, 725, f"User: {request.user.username}")
 
-
-
-    # 🗒 Add weight logs
+    # 🗒️ Weight Logs
     y = 700
-    p.setFont("Helvetica", 10)
+    p.setFont("Helvetica", 11)
+    p.drawString(50, y, "Entries:")
+    y -= 20
+
     for entry in entries:
-        p.drawString(60, y, f"{entry.date}: {entry.weight} kg")
-        y -= 15
+        formatted_date = entry.date.strftime('%Y-%m-%d')
+        p.drawString(60, y, f"{formatted_date}: {entry.weight} kg")
+        y -= 18
         if y < 100:
             p.showPage()
             y = 750
 
+    # ✏️ Final Summary at the bottom
+    if y < 140:
+        p.showPage()
+        y = 750
+    y -= 20
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(50, y, "📊 Summary")
+    y -= 20
+    p.setFont("Helvetica", 11)
+    p.drawString(60, y, summary)
+
     p.save()
     buffer.seek(0)
 
-    return HttpResponse(buffer, content_type='application/pdf')
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="weight_progress_report.pdf"'
+    return response
+
 
 
 def download_diary_pdf(request):
@@ -162,7 +276,7 @@ def weight_progress_view(request):
 def recalculate_goals_view(request):
     try:
         params = UserParametres.objects.get(user=request.user)
-        calculate_targets(  # this will trigger fresh values
+        targets = calculate_targets(
             sex=params.sex,
             weight=params.weight,
             height=params.height,
@@ -170,12 +284,14 @@ def recalculate_goals_view(request):
             goal=params.goal,
             activity=params.activity
         )
+        params.calories_goal = targets['calories']
+        params.save()
         messages.success(request, "✅ Calorie and macro goals recalculated!")
     except UserParametres.DoesNotExist:
         messages.warning(request, "⚠️ You need to complete calorie setup first.")
 
     return redirect('profile')
-from django.db.models import Max
+
 
 @login_required
 def calorie_setup_view(request):
@@ -190,9 +306,20 @@ def calorie_setup_view(request):
             updated = form.save(commit=False)
             updated.user = request.user
             updated.date_time = date.today()
+
+            # ✅ Save calories to the model
+            targets = calculate_targets(
+                sex=updated.sex,
+                weight=updated.weight,
+                height=updated.height,
+                age=updated.age,
+                goal=updated.goal,
+                activity=updated.activity
+            )
+            updated.calories_goal = targets['calories']
             updated.save()
 
-            # ✅ Always log a new weight entry with full datetime
+            # ✅ Log new weight entry
             WeightEntry.objects.create(
                 user=request.user,
                 weight=updated.weight,
@@ -251,6 +378,8 @@ def diary_view(request):
             age=params.age,
             goal=params.goal,
             activity=params.activity
+
+
         )
         calorie_goal = targets['calories']
     except UserParametres.DoesNotExist:
@@ -266,6 +395,9 @@ def diary_view(request):
         'total_fat': total_fat,
         'total_fiber': total_fiber,
         'calorie_goal': calorie_goal,
+        'protein_goal': targets['protein'],  # ✅ add
+        'fat_goal': targets['fat'],  # ✅ add
+        'carbs_goal': targets['carbs'],  # ✅ add
         'calories_remaining': calories_remaining,
         'today': selected_date,
         'prev_date': selected_date - timedelta(days=1),
@@ -279,6 +411,11 @@ from django.contrib import messages
 import requests
 
 def home(request):
+    try:
+        if not UserParametres.objects.filter(user=request.user).exists():
+            return redirect('calorie_setup')
+    except:
+        return redirect('calorie_setup')
     context = {}
 
     if request.method == 'POST' and 'query' in request.POST:
@@ -335,7 +472,9 @@ def home(request):
                 carbohydrates=carbs,
                 protein=protein,
                 fat=fat,
-                fiber=fiber
+                fiber=fiber,
+                portion=portion
+
             )
 
             messages.success(request, f"{food_data['name'].capitalize()} ({portion}g) added to your diary!")

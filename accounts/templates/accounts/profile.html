@@ -2,128 +2,164 @@
 {% load widget_tweaks %}
 
 {% block content %}
-    <div class="container mt-5">
+<div class="container mt-1">
 
-        <!-- ✅ Success messages -->
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-success alert-dismissible fade show auto-dismiss" role="alert">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
+  <h2 class="mb-4 fw-light" style="color: #2d4739;"><i class="bi bi-person-fill me-2"></i> <strong>Profile Dashboard</strong></h2>
 
-        <h2 class="mb-4">Update Profile</h2>
+  <ul class="nav nav-tabs mb-4 border-bottom" id="profileTabs" role="tablist">
+    <li class="nav-item">
+      <a class="nav-link active" id="profile-tab" data-bs-toggle="tab" href="#profile" role="tab">Profile Info</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="nutrition-tab" data-bs-toggle="tab" href="#nutrition" role="tab">Nutrition Targets</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="weight-tab" data-bs-toggle="tab" href="#weight" role="tab">Weight Progress</a>
+    </li>
+  </ul>
 
-        <!-- ✅ Profile update form -->
-        <form method="POST" class="mb-3">
-            {% csrf_token %}
-            <div class="row g-2 align-items-end">
-                <div class="col-md-6">
-                    <label class="form-label">{{ form.username.label }}</label>
-                    {{ form.username|add_class:"form-control" }}
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">{{ form.email.label }}</label>
-                    {{ form.email|add_class:"form-control" }}
-                </div>
+  <div class="tab-content" id="profileTabsContent">
+
+    <!-- ✅ Profile Info Tab -->
+    <div class="tab-pane fade show active" id="profile" role="tabpanel">
+      <div class="caloriescont">
+        <form method="POST">
+          {% csrf_token %}
+          <div class="row g-4 align-items-end">
+            <div class="col-md-4">
+              <label class="form-label">Username</label>
+              {{ form.username|add_class:"form-control" }}
             </div>
-
-            <div class="d-flex flex-wrap align-items-center gap-2 mt-4">
-                <button type="submit" class="btn btn-success">✅ Save Changes</button>
-                <a href="{% url 'password_change' %}" class="btn btn-warning">🔒 Change Password</a>
-                <a href="{% url 'calorie_setup' %}" class="btn btn-outline-info">🔁 Recalculate Goals</a>
+            <div class="col-md-4">
+              <label class="form-label">Email address</label>
+              {{ form.email|add_class:"form-control" }}
             </div>
+            <div class="col-md-4">
+              <label class="form-label invisible">Change Password</label>
+              <a href="{% url 'password_change' %}" class="btn btn-soft w-100">🔒 Change Password</a>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <button type="submit" class="btn whoop">✅ Save Changes</button>
+          </div>
         </form>
+      </div>
+    </div>
 
-        {% if targets %}
-            <hr class="my-4">
-            <h5 class="text-muted">💡 Your Basal Metabolic Rate (BMR)</h5>
-            <p>{{ targets.bmr }} kcal/day — the energy your body burns at complete rest.</p>
+    <!-- ✅ Nutrition Tab -->
+    <div class="tab-pane fade" id="nutrition" role="tabpanel">
+      <div class="caloriescont">
+        <p class="mb-3">
+          <strong>💡 Basal Metabolic Rate:</strong><br>
+          {{ targets.bmr }} kcal/day — the energy your body burns at rest.
+        </p>
 
-            <h4 class="mt-4">🎯 Your Daily Nutrition Targets</h4>
-            <div class="card shadow-sm">
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item">🔥 <strong>Calories:</strong> {{ targets.calories }} kcal</li>
-                    <li class="list-group-item">🍗 <strong>Protein:</strong> {{ targets.protein }} g</li>
-                    <li class="list-group-item">🥑 <strong>Fat:</strong> {{ targets.fat }} g</li>
-                    <li class="list-group-item">🍞 <strong>Carbs:</strong> {{ targets.carbs }} g</li>
-                </ul>
-            </div>
-        {% endif %}
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">🎯 Daily Nutrition Targets</h5>
+          <a href="{% url 'calorie_setup' %}" class="btn btn-soft">🔁 Recalculate Goals</a>
+        </div>
 
-        {% if weight_entries %}
-            <hr class="my-4">
-            <h4 class="mt-4">📉 Weight Progress</h4>
-            <form method="get" action="{% url 'download_weight_pdf' %}" class="mt-2 d-flex gap-1">
-                <input type="date" name="start_date" class="form-control" required>
-                <input type="date" name="end_date" class="form-control" required>
-                <button type="submit" class="btn btn-outline-secondary">📥 Download Weight Report</button>
-            </form>
-            <div class="card p-3 shadow-sm">
-                {% with current=latest_weight goal=request.user.userparametres.target_weight %}
-                    <p>
-                        Current weight: <strong>{{ latest_weight|floatformat:1 }} kg</strong><br>
-                        {% if goal_weight %}
-                            Goal weight: <strong>{{ goal_weight|floatformat:1 }} kg</strong><br>
-                            Remaining:
-                            {% if weight_diff > 0 %}
-                                <strong class="text-success">+{{ weight_diff }} kg</strong>
-                            {% elif weight_diff < 0 %}
-                                <strong class="text-danger">{{ weight_diff }} kg</strong>
-                            {% else %}
-                                <strong class="text-muted">You’ve reached your goal 🎉</strong>
-                            {% endif %}
-                        {% endif %}
-                    </p>
-                {% endwith %}
+        <div class="bg-warning bg-opacity-10 rounded p-3 text-center mb-3">
+          <h3 class="fw-bold mb-0">🔥 {{ targets.calories }} Kcal</h3>
+          <small class="text-muted">Your daily calorie target</small>
+        </div>
 
 
+        <div class="d-flex justify-content-around text-center mt-4">
+          <div class="macro-box">
+            <span class="macro-label">🍗 Protein</span><br>
+            <span class="macro-value">{{ total_protein|floatformat:1 }} / {{ targets.protein|floatformat:1 }} g</span>
+          </div>
+          <div class="macro-box">
+            <span class="macro-label">🥑 Fat</span><br>
+            <span class="macro-value">{{ total_fat|floatformat:1 }} / {{ targets.fat|floatformat:1 }} g</span>
+          </div>
+          <div class="macro-box">
+            <span class="macro-label">🍞 Carbs</span><br>
+            <span class="macro-value">{{ total_carbs|floatformat:1 }} / {{ targets.carbs|floatformat:1 }} g</span>
+          </div>
+        </div>
+    </div>
+  </div>
 
-                <form method="POST" class="d-flex gap-2 align-items-end">
-                    {% csrf_token %}
-                    {{ weight_form.weight.label_tag }}
-                    {{ weight_form.weight }}
-                    <button class="btn btn-outline-primary btn-sm" name="weight_entry">➕ Add</button>
-                </form>
+<!-- ✅ Weight Progress Tab -->
+<div class="tab-pane fade" id="weight" role="tabpanel">
+  <div class="caloriescont px-3 pt-3 pb-4" >
+    {% if weight_entries %}
+      <!-- Add Weight Entry Form -->
+    <form method="POST" class="row g-3 align-items-center mb-4">
+      {% csrf_token %}
+      <div class="col-auto">
+        <label for="id_weight" class="col-form-label">Weight:</label>
+      </div>
+      <div class="col">
+        {{ weight_form.weight|add_class:"form-control w-90" }}
+      </div>
+      <div class="col-auto">
+        <button class="btn btn-soft" name="weight_entry">➕ Add</button>
+      </div>
+    </form>
 
-                <div class="mt-3">
-                    <canvas id="weightChart" width="400" height="150"></canvas>
-                </div>
-            </div>
 
-            </div>
-        {% endif %}
+      <!-- Chart Display -->
+      <canvas id="weightChart" height="120px"></canvas>
+
+      <!-- Download PDF Form (Moved Below) -->
+    <form method="get" action="{% url 'download_weight_pdf' %}" class="row g-3 align-items-end mt-4">
+      <div class="col">
+        <label class="form-label">From:</label>
+        <input type="date" name="start_date" class="form-control" required>
+      </div>
+      <div class="col">
+        <label class="form-label">To:</label>
+        <input type="date" name="end_date" class="form-control" required>
+      </div>
+      <div class="col-auto d-flex align-items-end">
+        <button type="submit" class="btn btn-soft d-inline-flex align-items-center justify-content-center px-4 py-2">
+          📥 Download PDF
+        </button>
+      </div>
+    </form>
+
+    {% else %}
+      <p class="text-muted">No weight entries found. Start tracking to see your progress.</p>
+    {% endif %}
+  </div>
+</div>
 
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        const weightChart = document.getElementById('weightChart');
-        {% if weight_entries %}
-            new Chart(weightChart, {
-                type: 'line',
-                data: {
-                    labels: [{% for entry in weight_entries %}"{{ entry.date|date:'M j' }}"{% if not forloop.last %}, {% endif %}{% endfor %}],
-                    datasets: [{
-                        label: 'Weight (kg)',
-                        data: [{% for entry in weight_entries %}{{ entry.weight }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-                        fill: true,
-                        borderColor: 'deeppink',
-                        backgroundColor: 'rgba(255,105,180,0.1)',
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: false
-                        }
-                    },
-                    plugins: {
-                        legend: {display: false}
-                    }
-                }
-            });
-        {% endif %}
-    </script>
+<!-- ✅ Chart.js for weight graph -->
+
+<!-- ✅ Include Chart.js only once -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  // ✅ Weight Chart
+  const weightChart = document.getElementById('weightChart');
+  {% if weight_entries %}
+  new Chart(weightChart, {
+    type: 'line',
+    data: {
+      labels: [{% for entry in weight_entries %}"{{ entry.date|date:'M j' }}"{% if not forloop.last %}, {% endif %}{% endfor %}],
+      datasets: [{
+        label: 'Weight (kg)',
+        data: [{% for entry in weight_entries %}{{ entry.weight }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+        fill: true,
+        borderColor: '#f06292',
+        backgroundColor: 'rgba(240,98,146,0.2)',
+        tension: 0.4
+      }]
+    },
+    options: {
+      scales: {
+        y: { beginAtZero: false }
+      },
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+  {% endif %}
+</script>
 {% endblock %}

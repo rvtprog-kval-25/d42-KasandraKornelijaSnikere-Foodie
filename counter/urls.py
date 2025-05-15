@@ -12,6 +12,5 @@ urlpatterns = [
     path('add-custom-food/', views.custom_food_entry_view, name='add_custom_food'),
     path('download-diary-pdf/', views.download_diary_pdf, name='download_diary_pdf'),
     path('download-weight-pdf/', views.download_weight_pdf, name='download_weight_pdf'),
-
-
+    path('meal-plan/', views.meal_plan_view, name='meal_plan'),
 ]

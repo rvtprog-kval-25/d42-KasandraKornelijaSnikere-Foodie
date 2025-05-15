@@ -2,133 +2,169 @@
 {% load humanize %}
 
 {% block content %}
-<div class="container mt-5">
-    {% if messages %}
-    {% for message in messages %}
-        <div class="alert alert-success alert-dismissible fade show auto-dismiss" role="alert">
-        {{ message }}
-        </div>
-    {% endfor %}
-   {% endif %}
-  <h2 class="text-center mb-4">
-  <a href="?date={{ prev_date|date:'Y-m-d' }}" class="btn btn-light btn-sm me-2">⬅️</a>
-  🍽️ Your Diary for {{ today|date:"F j, Y" }}
-  <a href="?date={{ next_date|date:'Y-m-d' }}" class="btn btn-light btn-sm ms-2">➡️</a>
-</h2>
-<form method="GET" action="{% url 'download_diary_pdf' %}" class="row g-2 mb-4">
-  <div class="col-auto">
-    <label for="start_date">From:</label>
-    <input type="date" name="start_date" id="start_date" class="form-control" required>
-  </div>
-  <div class="col-auto">
-    <label for="end_date">To:</label>
-    <input type="date" name="end_date" id="end_date" class="form-control" required>
-  </div>
-  <div class="col-auto d-flex align-items-end">
-    <button type="submit" class="btn btn-outline-primary">📄 Download PDF Report</button>
-  </div>
-</form>
+<div class="container mt-3">
 
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-success alert-dismissible fade show auto-dismiss" role="alert">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <h2 class="text-center mb-4 fs-4 fw-semibold">
+    <a href="?date={{ prev_date|date:'Y-m-d' }}" class="btn btn-light btn-sm px-3 py-1 me-2 fs-5">⬅️</a>
+    🍽️ Your Diary for {{ today|date:"F j, Y" }}
+    <a href="?date={{ next_date|date:'Y-m-d' }}" class="btn btn-light btn-sm px-3 py-1 me-2 fs-5">➡️</a>
+  </h2>
 
   {% if food_entries %}
-    <table class="table table-striped table-hover align-middle text-center">
-      <thead class="table-dark">
-        <tr>
-          <th>Food</th>
-          <th>Calories</th>
-          <th>Carbs (g)</th>
-          <th>Protein (g)</th>
-          <th>Fat (g)</th>
-          <th>Fiber (g)</th>
-          <th>Time</th>
-          <th>Delete</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for food in food_entries %}
-          <tr>
-            <td>{{ food.name|capfirst }}</td>
-            <td>{{ food.calories|floatformat:1 }}</td>
-            <td>{{ food.carbohydrates|floatformat:1 }}</td>
-            <td>{{ food.protein|floatformat:1 }}</td>
-            <td>{{ food.fat|floatformat:1 }}</td>
-            <td>{{ food.fiber|floatformat:1 }}</td>
-            <td>{{ food.search_date|time:"H:i" }}</td>
-            <td>
-              <form action="{% url 'delete_food' food.id %}?date={{ today|date:'Y-m-d' }}" method="POST" style="display:inline;">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-outline-danger btn-sm d-inline-flex align-items-center justify-content-center rounded-circle"
-                        style="width: 32px; height: 32px;" title="Delete" 
-                        onclick="return confirm('Delete this entry?')">
-                <i class="bi bi-trash"></i>
-                </button>
-              </form>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-
-    <div class="row mt-4">
-      <div class="col-md-6">
-        <h4 class="mb-3">🔢 Summary</h4>
-        <ul class="list-group">
-          <li class="list-group-item">Calories: <strong>{{ total_calories|floatformat:1 }}</strong> / {{ calorie_goal }} kcal</li>
-          <li class="list-group-item">Carbs: <strong>{{ total_carbs|floatformat:1 }}g</strong></li>
-          <li class="list-group-item">Protein: <strong>{{ total_protein|floatformat:1 }}g</strong></li>
-          <li class="list-group-item">Fat: <strong>{{ total_fat|floatformat:1 }}g</strong></li>
-          <li class="list-group-item">Fiber: <strong>{{ total_fiber|floatformat:1 }}g</strong></li>
-          <li class="list-group-item text-success">✅ Calories remaining: <strong>{{ calories_remaining|floatformat:1 }} kcal</strong></li>
-        </ul>
-      </div>
-
-      <div class="col-md-6">
-        <h4 class="mb-3 text-center">Your Macronutrient Breakdown</h4>
-        <canvas id="macroChart"></canvas>
+    <div class="caloriescont mb-4">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle text-center fs-6 rounded overflow-hidden table-header-custom">
+          <thead class="fw-semibold">
+            <tr>
+              <th>Food</th>
+              <th>Portion (g)</th>
+              <th>Calories</th>
+              <th>Carbs</th>
+              <th>Protein</th>
+              <th>Fat</th>
+              <th>Fiber</th>
+              <th>Time</th>
+              <th>Delete</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for food in food_entries %}
+              <tr>
+                <td>{{ food.name|capfirst }}</td>
+                <td>{{ food.portion|default:"-" }}</td>
+                <td>{{ food.calories|floatformat:1 }}</td>
+                <td>{{ food.carbohydrates|floatformat:1 }}</td>
+                <td>{{ food.protein|floatformat:1 }}</td>
+                <td>{{ food.fat|floatformat:1 }}</td>
+                <td>{{ food.fiber|floatformat:1 }}</td>
+                <td>{{ food.search_date|time:"H:i" }}</td>
+                <td>
+                  <form action="{% url 'delete_food' food.id %}?date={{ today|date:'Y-m-d' }}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-circle" style="width: 30px; height: 30px;" title="Delete" onclick="return confirm('Delete this entry?')">
+                      <i class="bi bi-trash small"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
+
+    <div class="row g-4">
+      <div class="col-md-6">
+        <div class="caloriescont h-100">
+          <h5 class="mb-3 ">🔢 Daily Summary</h5>
+          <ul class="list-group fs-6">
+            <li class="list-group-item d-flex justify-content-between">
+              <span class="fw-semibold text-dark">Calories:</span>
+              <span><strong>{{ total_calories|floatformat:1 }}</strong> / {{ calorie_goal }} kcal</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span class="fw-semibold text-dark">Protein:</span>
+              <span><strong>{{ total_protein|floatformat:1 }}g</strong> / {{ protein_goal }}g</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span class="fw-semibold text-dark">Fat:</span>
+              <span><strong>{{ total_fat|floatformat:1 }}g</strong> / {{ fat_goal }}g</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span class="fw-semibold text-dark">Carbs:</span>
+              <span><strong>{{ total_carbs|floatformat:1 }}g</strong> / {{ carbs_goal }}g</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between text-success">
+              <span class="fw-semibold text-dark">Calories Remaining:</span>
+              <span><strong>{{ calories_remaining|floatformat:1 }} kcal</strong></span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="caloriescont h-100 text-center">
+          <h5 class="mb-3">🥑 Macronutrient Breakdown</h5>
+          <canvas id="macroChart" height="180"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="caloriescont mt-4">
+      <h6 class="mb-3">📄 Export Diary</h6>
+      <form method="GET" action="{% url 'download_diary_pdf' %}" class="row g-3 align-items-end justify-content-center">
+        <div class="col-md-4">
+          <label for="start_date" class="form-label">From:</label>
+          <input type="date" name="start_date" id="start_date" class="form-control" required>
+        </div>
+        <div class="col-md-4">
+          <label for="end_date" class="form-label">To:</label>
+          <input type="date" name="end_date" id="end_date" class="form-control" required>
+        </div>
+        <div class="col d-flex align-items-end">
+          <button type="submit" class="btn btn-soft w-100 d-inline-flex align-items-center justify-content-center px-4 py-2">
+            📥 Download PDF
+          </button>
+        </div>
+      </form>
+    </div>
+
   {% else %}
-    <p class="text-center mt-5">You haven't logged any food today. Start by <a href="/">searching for something</a>! 🍎</p>
+    <p class="text-center mt-5">You haven't logged any food today. <a href="/">Start adding something 🍎</a>!</p>
   {% endif %}
 </div>
 
-<!-- Chart.js Donut for Macros -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const ctx = document.getElementById('macroChart');
-    if (ctx) {
-      new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Carbs', 'Protein', 'Fat', 'Fiber'],
-          datasets: [{
-            label: 'Macronutrients',
-            data: [
-              {{ total_carbs|default:"0" }},
-              {{ total_protein|default:"0" }},
-              {{ total_fat|default:"0" }},
-              {{ total_fiber|default:"0" }}
-            ],
-            backgroundColor: [
-              'rgba(255, 205, 86, 0.8)',   // Carbs - Yellow
-              'rgba(75, 192, 192, 0.8)',   // Protein - Teal
-              'rgba(255, 99, 132, 0.8)',   // Fat - Red
-              'rgba(54, 162, 235, 0.8)'    // Fiber - Blue
-            ],
-            borderColor: ['white'],
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { position: 'bottom' },
-            title: { display: false }
+document.addEventListener("DOMContentLoaded", function () {
+  const ctx = document.getElementById('macroChart');
+  if (ctx) {
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Macros'],
+        datasets: [
+          {
+            label: 'Carbs',
+            data: [{{ total_carbs|default:"0" }}],
+            backgroundColor: 'rgba(255, 205, 86, 0.7)'
+          },
+          {
+            label: 'Protein',
+            data: [{{ total_protein|default:"0" }}],
+            backgroundColor: 'rgba(75, 192, 192, 0.7)'
+          },
+          {
+            label: 'Fat',
+            data: [{{ total_fat|default:"0" }}],
+            backgroundColor: 'rgba(255, 99, 132, 0.7)'
           }
+        ]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom' },
+          title: { display: false }
+        },
+        scales: {
+          x: { stacked: true, beginAtZero: true },
+          y: { stacked: true }
         }
-      });
-    }
-  });
+      }
+    });
+  }
+});
 </script>
+
+<div style="height: 40px;"></div>
 {% endblock %}
