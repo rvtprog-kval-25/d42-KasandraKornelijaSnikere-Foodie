@@ -6,22 +6,22 @@
 
   <h2 class="mb-4 fw-light" style="color: #2d4739;"><i class="bi bi-person-fill me-2"></i> <strong>Profile Dashboard</strong></h2>
 
-  <ul class="nav nav-tabs mb-4 border-bottom" id="profileTabs" role="tablist">
-    <li class="nav-item">
-      <a class="nav-link active" id="profile-tab" data-bs-toggle="tab" href="#profile" role="tab">Profile Info</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" id="nutrition-tab" data-bs-toggle="tab" href="#nutrition" role="tab">Nutrition Targets</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" id="weight-tab" data-bs-toggle="tab" href="#weight" role="tab">Weight Progress</a>
-    </li>
-  </ul>
+    <ul class="nav nav-tabs mb-4 border-bottom" id="profileTabs" role="tablist">
+      <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'profile' or not active_tab %}active{% endif %}" id="profile-tab" data-bs-toggle="tab" href="#profile" role="tab">Profile Info</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'nutrition' %}active{% endif %}" id="nutrition-tab" data-bs-toggle="tab" href="#nutrition" role="tab">Nutrition Targets</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'weight' %}active{% endif %}" id="weight-tab" data-bs-toggle="tab" href="#weight" role="tab">Weight Progress</a>
+      </li>
+    </ul>
 
   <div class="tab-content" id="profileTabsContent">
 
     <!-- ✅ Profile Info Tab -->
-    <div class="tab-pane fade show active" id="profile" role="tabpanel">
+    <div class="tab-pane fade" id="profile" role="tabpanel">
       <div class="caloriescont">
         <form method="POST">
           {% csrf_token %}
@@ -95,6 +95,11 @@
       </div>
       <div class="col">
         {{ weight_form.weight|add_class:"form-control w-90" }}
+          {% if weight_form.weight.errors %}
+            <div class="text-danger small mt-1">
+                {{ weight_form.weight.errors.0 }}
+            </div>
+          {% endif %}
       </div>
       <div class="col-auto">
         <button class="btn btn-soft" name="weight_entry">➕ Add</button>
@@ -162,4 +167,34 @@
   });
   {% endif %}
 </script>
+<script>
+  // ✅ Save active tab to localStorage
+  document.querySelectorAll('a[data-bs-toggle="tab"]').forEach(tab => {
+    tab.addEventListener('shown.bs.tab', function (e) {
+      localStorage.setItem('activeTab', e.target.getAttribute('href'));
+    });
+  });
+
+  // ✅ On page load, restore last active tab
+  document.addEventListener('DOMContentLoaded', function () {
+    const activeTab = localStorage.getItem('activeTab');
+    if (activeTab) {
+      const tabTrigger = document.querySelector(`a[href="${activeTab}"]`);
+      if (tabTrigger) {
+        new bootstrap.Tab(tabTrigger).show();
+      }
+    }
+  });
+      // Ja ir tikai viens alerts aktīvs (Bootstrap), saglabā aktīvo tab pirms nosūtīšanas
+    document.querySelectorAll('form').forEach(form => {
+      form.addEventListener('submit', () => {
+        const activeTab = document.querySelector('.nav-link.active');
+        if (activeTab) {
+          localStorage.setItem('activeTab', activeTab.getAttribute('href'));
+        }
+      });
+    });
+
+</script>
+
 {% endblock %}

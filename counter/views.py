@@ -267,10 +267,36 @@ def weight_progress_view(request):
             weight_entry.user = request.user
             weight_entry.save()
             messages.success(request, "📈 Weight entry added!")
-            return redirect('weight_progress')
+            return redirect('profile#weight')  # paliek uz svara tab
+        else:
+            # Ja forma nav derīga, parādi kļūdas ziņojumu
+            request.session['weight_form_data'] = request.POST
+            messages.warning(request, "⚠️ Invalid weight entry. Please check the value.")
+            return redirect('profile')
+    return render(request, 'accounts/profile.html', {
+        'weight_form': form,
+        'weight_entries': entries,
+        'active_tab': 'weight'  # pievienojam mainīgo
+    })
+from accounts.forms import UpdateProfileForm
+@login_required
+def profile_view(request):
+    form = UpdateProfileForm(instance=request.user)
 
-    return render(request, 'weight_progress.html', {'form': form, 'entries': entries})
+    # Atkārtoti ielādēt pēdējo mēģinājumu svara formai
+    if 'weight_form_data' in request.session:
+        weight_form = WeightEntryForm(request.session.pop('weight_form_data'))
+    else:
+        weight_form = WeightEntryForm()
 
+    entries = WeightEntry.objects.filter(user=request.user).order_by('-date')
+
+    return render(request, 'accounts/profile.html', {
+        'form': form,
+        'weight_form': weight_form,
+        'weight_entries': entries,
+        'active_tab': 'weight' if request.path == '/profile/' and '#weight' in request.get_full_path() else 'profile'
+    })
 
 @login_required
 def recalculate_goals_view(request):
@@ -411,11 +437,9 @@ from django.contrib import messages
 import requests
 
 def home(request):
-    try:
+    if request.user.is_authenticated:
         if not UserParametres.objects.filter(user=request.user).exists():
             return redirect('calorie_setup')
-    except:
-        return redirect('calorie_setup')
     context = {}
 
     if request.method == 'POST' and 'query' in request.POST:

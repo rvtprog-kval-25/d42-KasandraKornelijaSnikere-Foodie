@@ -11,8 +11,7 @@ from counter.forms import WeightEntryForm
 from datetime import timedelta
 from django.utils import timezone
 from counter.models import Food  # adjust if your Food model is elsewhere
-@login_required
-@login_required
+
 @login_required
 def profile_view(request):
     user = request.user
